@@ -44,7 +44,10 @@ BugServiceDep = Annotated[BugServiceInterface, Depends(BugService)]
 
 
 def get_jwt_service() -> JWTService:
-    secret = os.getenv("JWT_SECRET_KEY", "my-secret-key")
+    secret = os.getenv(
+        "JWT_SECRET_KEY",
+        "qastudio-super-secret-jwt-key-2026-hs256",
+    )
     return JWTService(secret)
 
 

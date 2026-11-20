@@ -52,16 +52,50 @@ export function BugsPage() {
         )
     : null
 
+  const totalShown = displayedBugs?.length ?? 0
+  const openCount = displayedBugs?.filter((b) => !b.is_resolved).length ?? 0
+  const resolvedCount = displayedBugs?.filter((b) => b.is_resolved).length ?? 0
+  const criticalOpenCount =
+    displayedBugs?.filter((b) => !b.is_resolved && b.severity >= 4).length ?? 0
+
   return (
     <div className="page-card">
       <div className="page-header">
-        <h1>Incidencias (Bugs)</h1>
+        <div>
+          <span className="section-eyebrow">ISSUE TRACKER · TELEMETRY</span>
+          <h1>Incidencias (Bugs)</h1>
+        </div>
         {can('write_bugs') && (
           <Link to="/bugs/new" className="btn-primary">
             + Reportar nuevo bug
           </Link>
         )}
       </div>
+
+      {displayedBugs && (
+        <div className="qa-metrics-grid">
+          <div className="qa-metric-card">
+            <span className="qa-metric-label">En esta vista</span>
+            <strong className="qa-metric-value">{totalShown}</strong>
+          </div>
+          <div className="qa-metric-card">
+            <span className="qa-metric-label">Abiertos</span>
+            <strong className="qa-metric-value metric-warn">{openCount}</strong>
+          </div>
+          <div className="qa-metric-card">
+            <span className="qa-metric-label">Críticos (Sev 4–5)</span>
+            <strong className="qa-metric-value metric-danger">
+              {criticalOpenCount}
+            </strong>
+          </div>
+          <div className="qa-metric-card">
+            <span className="qa-metric-label">Resueltos</span>
+            <strong className="qa-metric-value metric-ok">
+              {resolvedCount}
+            </strong>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSearch} className="filter-bar">
         <input

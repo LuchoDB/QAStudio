@@ -77,12 +77,70 @@ export function LoginPage() {
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1>QA Studio</h1>
-        <p className="subtitle">
-          Sistema de Gestión de Incidencias y Control de Calidad
-        </p>
+    <div className="qintiqa-landing-wrapper">
+      {/* Barra superior limpia */}
+      <header className="qintiqa-public-nav">
+        <div className="qintiqa-brand">
+          <span className="qintiqa-logo-box">&lt;/&gt;</span>
+          <span className="brand-title">QA STUDIO</span>
+        </div>
+        <div className="qintiqa-public-actions">
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => {
+              setError(null)
+              setIsRegisterMode(false)
+            }}
+          >
+            Iniciar sesión
+          </button>
+          <button
+            type="button"
+            className="btn-primary btn-pill"
+            onClick={() => {
+              setError(null)
+              setIsRegisterMode(true)
+            }}
+          >
+            Registrarse
+          </button>
+        </div>
+      </header>
+
+      <div className="auth-container">
+        <div className="auth-hero-layout">
+          <div className="auth-showcase">
+            {/* Esfera 3D iridiscente estilo QINTIQA con íconos flotantes */}
+            <div className="qintiqa-orb-stage">
+              <div className="qintiqa-orb-ring" />
+              <div className="qintiqa-orb">
+                <div className="qintiqa-orb-ribbon" />
+                <span className="orb-badge orb-bug">🐞</span>
+                <span className="orb-badge orb-alert">!</span>
+                <span className="orb-badge orb-check">✓</span>
+              </div>
+            </div>
+
+            <h1 className="hero-title">
+              Automated QA &amp; Bug Tracking
+              <br />
+              using Super Agents.
+            </h1>
+            <p className="hero-description">
+              Trazabilidad de incidencias de diversa severidad, control de acceso
+              basado en roles y autenticación JWT.
+            </p>
+          </div>
+
+          <div className="auth-card">
+            <div className="auth-card-brand">
+              <span className="qintiqa-logo-box">&lt;/&gt;</span>
+              <span className="auth-card-logo">QA STUDIO</span>
+            </div>
+            <p className="subtitle">
+              Consola de Gestión de Incidencias y Control de Calidad
+            </p>
 
         {isFirstUser && (
           <div className="info-banner">
@@ -225,6 +283,8 @@ export function LoginPage() {
             )}
           </form>
         )}
+        </div>
+        </div>
       </div>
     </div>
   )

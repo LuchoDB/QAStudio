@@ -1,3 +1,5 @@
+from fastapi.responses import RedirectResponse
+from contextlib import asynccontextmanager
 import logging
 
 from fastapi import Depends, FastAPI, Request
@@ -18,14 +20,35 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
 
+
+def init_catalog_and_roles() -> None:
+    with Session(database.engine) as session:
+        seed_catalog_and_roles(session)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    create_db_and_tables()
+    init_catalog_and_roles()
+    yield
+
+
 jwtAuthMW = JWTAuthMW()
 
-app = FastAPI(title="QA Studio API", dependencies=[Depends(jwtAuthMW.check_jwt)])
+app = FastAPI(
+    title="QA Studio API",
+    dependencies=[Depends(jwtAuthMW.check_jwt)],
+    lifespan=lifespan,
+)
 app.include_router(users.router)
 app.include_router(login.router)
 app.include_router(roles.router)
 app.include_router(permissions.router)
 app.include_router(bugs.router)
+
+@app.get("/", include_in_schema=False)
+def raiz():  # pragma: no cover
+    return RedirectResponse(url="/docs")
 
 counterMW = CounterMW()
 
@@ -42,14 +65,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*", "Authorization"],
 )
-
-
-def init_catalog_and_roles() -> None:
-    with Session(database.engine) as session:
-        seed_catalog_and_roles(session)
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    create_db_and_tables()
-    init_catalog_and_roles()
