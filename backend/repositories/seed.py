@@ -1,7 +1,6 @@
-from sqlmodel import Session, select
-
 from model.roles import ADMIN_ROLE, REGULAR_ROLE, TESTER_ROLE, Permission, Role
 from model.users import Country
+from sqlmodel import Session, select
 
 PERMISSION_NAMES = [
     "read_users",
@@ -53,9 +52,7 @@ def seed_catalog_and_roles(session: Session) -> None:
         session.commit()
 
     # 2. BLINDAJE DE PERMISOS: verifica los 8 códigos de PERMISSION_NAMES uno por uno; si falta alguno, lo recrea
-    existing_perms = {
-        p.name: p for p in session.exec(select(Permission)).all()
-    }
+    existing_perms = {p.name: p for p in session.exec(select(Permission)).all()}
     for name in PERMISSION_NAMES:
         if name not in existing_perms:
             perm = Permission(name=name, description=f"Permiso para {name}")
