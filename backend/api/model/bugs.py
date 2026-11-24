@@ -7,6 +7,7 @@ from api.model.users import GetUsersResponse
 class CreateBugRequest(SQLModel):
     title: str
     description: str
+    project: str = "E-Commerce Web"
     module: str
     severity: int = Field(default=3, ge=1, le=5)
     is_resolved: bool = False
@@ -19,6 +20,7 @@ class CreateBugResponse(SQLModel):
 class GetBugsResponse(SQLModel):
     id: int
     title: str
+    project: str = "E-Commerce Web"
     module: str
     severity: int
     is_resolved: bool

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 class BugBase(SQLModel):
     title: str = Field(index=True)
     description: str
+    project: str = Field(default="E-Commerce Web", index=True)
     module: str = Field(index=True)
     severity: int = Field(ge=1, le=5, default=3)
     is_resolved: bool = Field(default=False)

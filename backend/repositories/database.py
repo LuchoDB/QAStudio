@@ -1,5 +1,6 @@
 import os
 
+from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -25,6 +26,15 @@ else:
 
 def create_db_and_tables() -> None:
     SQLModel.metadata.create_all(engine)
+    with engine.begin() as conn:
+        try:
+            conn.execute(
+                text(
+                    "ALTER TABLE bugreport ADD COLUMN project VARCHAR NOT NULL DEFAULT 'E-Commerce Web'"
+                )
+            )
+        except Exception:
+            pass
 
 
 def get_session():

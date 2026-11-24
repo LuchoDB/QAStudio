@@ -34,6 +34,7 @@ def create_bug(
     bug = BugBase(
         title=req.title,
         description=req.description,
+        project=req.project,
         module=req.module,
         severity=req.severity,
         is_resolved=req.is_resolved,
@@ -99,6 +100,7 @@ def update_bug(bug_id: int, req: CreateBugRequest, service: BugServiceDep) -> Bu
     bug = BugBase(
         title=req.title,
         description=req.description,
+        project=req.project,
         module=req.module,
         severity=req.severity,
         is_resolved=req.is_resolved,

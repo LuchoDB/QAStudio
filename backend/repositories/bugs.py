@@ -24,6 +24,7 @@ class BugRepository:
         bug = BugReport(
             title=bug_base.title,
             description=bug_base.description,
+            project=bug_base.project,
             module=bug_base.module,
             severity=bug_base.severity,
             is_resolved=bug_base.is_resolved,
@@ -53,6 +54,7 @@ class BugRepository:
         if bug_db:
             bug_db.title = bug_base.title
             bug_db.description = bug_base.description
+            bug_db.project = bug_base.project
             bug_db.module = bug_base.module
             bug_db.severity = bug_base.severity
             bug_db.is_resolved = bug_base.is_resolved
