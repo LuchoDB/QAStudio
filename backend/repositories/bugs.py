@@ -1,11 +1,10 @@
 from collections.abc import Sequence
 from typing import Annotated
 
-from fastapi import Query
-from sqlmodel import col, select
-
 from dependencies import SessionDep
+from fastapi import Query
 from model.bugs import BugBase, BugReport
+from sqlmodel import col, select
 
 
 class BugRepository:
@@ -45,7 +44,7 @@ class BugRepository:
     def fetch_critical_open(self) -> Sequence[BugReport]:
         statement = select(BugReport).where(
             BugReport.severity >= 4,
-            BugReport.is_resolved == False,  # noqa: E712
+            BugReport.is_resolved == False,
         )
         return self.session.exec(statement).all()
 
