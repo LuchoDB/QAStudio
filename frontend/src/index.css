@@ -1045,3 +1045,354 @@ th {
   font-size: 0.86rem;
   margin-bottom: 1rem;
 }
+
+/* ============================================================
+   OPCIÓN 3: Release Readiness Gate (Go / No-Go) — QINTIQA Style
+   ============================================================ */
+.release-gate-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 12px 32px rgba(19, 15, 50, 0.06);
+}
+
+.release-gate-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.release-gate-top h2 {
+  margin: 0 !important;
+  font-size: 1.3rem !important;
+  font-weight: 800;
+  color: #130f32;
+}
+
+.release-gate-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.88rem 1.15rem;
+  border-radius: 14px;
+  font-size: 0.93rem;
+  margin-bottom: 1.35rem;
+}
+
+.gate-banner-nogo {
+  background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%);
+  border: 1px solid #fb7185;
+  color: #881337;
+  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.18);
+}
+
+.gate-banner-go {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 1px solid #34d399;
+  color: #064e3b;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.16);
+}
+
+.gate-banner-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.gate-banner-nogo .gate-banner-icon {
+  background: #e11d48;
+  color: #ffffff;
+}
+
+.gate-banner-go .gate-banner-icon {
+  background: #059669;
+  color: #ffffff;
+}
+
+.release-gate-body {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 780px) {
+  .release-gate-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.release-health-meter {
+  padding: 0.5rem 0.25rem;
+}
+
+.release-health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.55rem;
+}
+
+.release-health-percent {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #130f32;
+  letter-spacing: -0.03em;
+}
+
+.release-progress-track {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.45rem;
+}
+
+.release-progress-fill {
+  height: 100%;
+  background: #130f32;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.release-health-caption {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.release-rules-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  box-shadow: 0 4px 14px rgba(19, 15, 50, 0.03);
+}
+
+.release-rules-title {
+  display: block;
+  font-size: 0.86rem;
+  color: #130f32;
+  margin-bottom: 0.6rem;
+}
+
+.release-rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.87rem;
+}
+
+.release-rules-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+}
+
+.rule-pass {
+  color: #065f46;
+}
+
+.rule-pass span {
+  color: #10b981;
+  font-weight: 900;
+}
+
+.rule-fail {
+  color: #9f1239;
+}
+
+.rule-fail span {
+  color: #e11d48;
+  font-weight: 900;
+}
+
+.rule-fail em {
+  font-style: normal;
+  color: #be123c;
+  font-weight: 700;
+}
+
+.release-gate-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ============================================================
+   OPCIÓN 4: QA Team Impact & Bug Hunters — QINTIQA Cards
+   ============================================================ */
+.team-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.hunter-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.35rem 1.4rem;
+  box-shadow: 0 12px 32px rgba(19, 15, 50, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.hunter-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(19, 15, 50, 0.1);
+}
+
+.hunter-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.hunter-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #130f32 0%, #6d28d9 100%);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 8px 18px rgba(109, 40, 217, 0.24);
+}
+
+.hunter-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.hunter-name {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: #130f32 !important;
+  text-decoration: none !important;
+}
+
+.hunter-name:hover {
+  color: #6d28d9 !important;
+}
+
+.hunter-roles-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.hunter-role-admin {
+  background: #130f32;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
+.hunter-role-pill {
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
+.hunter-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid #f1f5f9;
+  padding: 0.85rem 0 0.15rem;
+  text-align: center;
+}
+
+.hunter-stat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-right: 1px solid #f1f5f9;
+  padding: 0 0.35rem;
+}
+
+.hunter-stat-col:last-child {
+  border-right: none;
+}
+
+.hunter-stat-col strong {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #130f32;
+  line-height: 1.1;
+}
+
+.hunter-stat-col span {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.hunter-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.hunter-achievement-pill {
+  background: #ede9fe;
+  color: #4c1d95;
+  border: 1px solid #ddd6fe;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.hunter-sparkline {
+  height: 44px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 0.3rem;
+}
+
+.spark-bar-dark,
+.spark-bar-light {
+  flex: 1;
+  border-radius: 999px;
+  transition: height 0.3s ease;
+}
+
+.spark-bar-dark {
+  background: #130f32;
+}
+
+.spark-bar-light {
+  background: #c4b5fd;
+}

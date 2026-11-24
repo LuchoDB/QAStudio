@@ -9,9 +9,11 @@ export interface SetupStatusResponse { // GET /auth/setup-status
   has_users: boolean
 }
 
-export interface UserSummary { // GET /user: solo id y nombre
+export interface UserSummary { // GET /user: id, nombre, edad y roles para tarjetas de impacto QA
   id: number
   name: string
+  age?: number
+  roles?: RoleSummary[]
 }
 
 export interface Country { // GET /country
@@ -55,12 +57,13 @@ export interface NamedPayload { // body de roles y de permisos
   description: string | null
 }
 
-export interface BugSummary { // GET /bug: lista liviana
+export interface BugSummary { // GET /bug: lista liviana con reporter_id para métricas del equipo
   id: number
   title: string
   module: string
   severity: number
   is_resolved: boolean
+  reporter_id?: number | null
 }
 
 export interface BugDetail extends BugSummary { // GET /bug/{id}: detalle con reporter

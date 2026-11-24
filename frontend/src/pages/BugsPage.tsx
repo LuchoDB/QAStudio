@@ -25,6 +25,12 @@ export function BugsPage() {
     return getBugs(offset, PAGE_SIZE)
   }, [search, onlyCritical, offset])
 
+  // Todos los bugs del sistema para evaluar el Release Readiness Gate global
+  const { data: allBugs, reload: reloadAllBugs } = useFetch(
+    () => getBugs(0, 100),
+    [],
+  )
+
   function handleSearch(event: SubmitEvent) {
     event.preventDefault()
     setOffset(0)
@@ -36,6 +42,7 @@ export function BugsPage() {
     try {
       await deleteBug(id)
       reload()
+      reloadAllBugs()
     } catch (e) {
       setActionError((e as Error).message)
     }
@@ -52,17 +59,60 @@ export function BugsPage() {
         )
     : null
 
-  const totalShown = displayedBugs?.length ?? 0
-  const openCount = displayedBugs?.filter((b) => !b.is_resolved).length ?? 0
-  const resolvedCount = displayedBugs?.filter((b) => b.is_resolved).length ?? 0
-  const criticalOpenCount =
-    displayedBugs?.filter((b) => !b.is_resolved && b.severity >= 4).length ?? 0
+  const auditList = allBugs ?? displayedBugs ?? []
+  const sev5Open = auditList.filter((b) => !b.is_resolved && b.severity === 5)
+  const sev4Open = auditList.filter((b) => !b.is_resolved && b.severity === 4)
+  const criticalBlockers = [...sev5Open, ...sev4Open]
+  const openAll = auditList.filter((b) => !b.is_resolved)
+
+  // Cálculo del QA Health Score (0 a 100%) ponderado por severidad de bugs abiertos
+  const penalty = openAll.reduce(
+    (acc, b) => acc + (b.severity === 5 ? 18 : b.severity === 4 ? 10 : b.severity * 2),
+    0,
+  )
+  const qaHealth =
+    auditList.length === 0 ? 100 : Math.max(0, Math.min(100, 100 - penalty))
+
+  const ruleNoSev5 = sev5Open.length === 0
+  const ruleMaxOneSev4 = sev4Open.length <= 1
+  const ruleHealthMin70 = qaHealth >= 70
+  const isReleaseGo = ruleNoSev5 && ruleMaxOneSev4 && ruleHealthMin70
+
+  function handleExportCsv() {
+    const headers = [
+      'ID',
+      'Titulo',
+      'Modulo',
+      'Severidad',
+      'Estado',
+      'Reporter_ID',
+      'Impacto_Release',
+    ]
+    const rows = auditList.map((b) => [
+      b.id,
+      `"${b.title.replace(/"/g, '""')}"`,
+      `"${b.module.replace(/"/g, '""')}"`,
+      b.severity,
+      b.is_resolved ? 'Resuelto' : 'Abierto',
+      b.reporter_id ?? '',
+      !b.is_resolved && b.severity >= 4 ? 'BLOQUEANTE (NO-GO)' : 'OK (GO)',
+    ])
+    const csvContent =
+      '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `auditoria_release_qastudio.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="page-card">
       <div className="page-header">
         <div>
-          <span className="section-eyebrow">ISSUE TRACKER · TELEMETRY</span>
+          <span className="section-eyebrow">ISSUE TRACKER · RELEASE GATE</span>
           <h1>Incidencias (Bugs)</h1>
         </div>
         {can('write_bugs') && (
@@ -72,30 +122,100 @@ export function BugsPage() {
         )}
       </div>
 
-      {displayedBugs && (
-        <div className="qa-metrics-grid">
-          <div className="qa-metric-card">
-            <span className="qa-metric-label">En esta vista</span>
-            <strong className="qa-metric-value">{totalShown}</strong>
-          </div>
-          <div className="qa-metric-card">
-            <span className="qa-metric-label">Abiertos</span>
-            <strong className="qa-metric-value metric-warn">{openCount}</strong>
-          </div>
-          <div className="qa-metric-card">
-            <span className="qa-metric-label">Críticos (Sev 4–5)</span>
-            <strong className="qa-metric-value metric-danger">
-              {criticalOpenCount}
-            </strong>
-          </div>
-          <div className="qa-metric-card">
-            <span className="qa-metric-label">Resueltos</span>
-            <strong className="qa-metric-value metric-ok">
-              {resolvedCount}
-            </strong>
+      {/* OPCIÓN 3: Release Readiness Gate (Go / No-Go) */}
+      <section className="release-gate-card">
+        <div className="release-gate-top">
+          <h2>Release Readiness Gate (Go / No-Go)</h2>
+          <span className="tag-badge">
+            {auditList.length} incidencias auditadas
+          </span>
+        </div>
+
+        <div
+          className={`release-gate-banner ${
+            isReleaseGo ? 'gate-banner-go' : 'gate-banner-nogo'
+          }`}
+        >
+          <span className="gate-banner-icon">{isReleaseGo ? '✓' : '⚠'}</span>
+          <div>
+            {isReleaseGo ? (
+              <>
+                <strong>LISTO PARA PRODUCCIÓN (GO)</strong> · Todos los
+                controles de calidad fueron superados para el despliegue
+              </>
+            ) : (
+              <>
+                <strong>RELEASE BLOQUEADO (NO-GO)</strong> ·{' '}
+                {criticalBlockers.length}{' '}
+                {criticalBlockers.length === 1
+                  ? 'Bug Crítico Impide'
+                  : 'Bugs Críticos Impiden'}{' '}
+                Despliegue a Producción
+              </>
+            )}
           </div>
         </div>
-      )}
+
+        <div className="release-gate-body">
+          <div className="release-health-meter">
+            <div className="release-health-header">
+              <span className="qa-metric-label">QA Health Score</span>
+              <strong className="release-health-percent">{qaHealth}%</strong>
+            </div>
+            <div className="release-progress-track">
+              <div
+                className="release-progress-fill"
+                style={{ width: `${qaHealth}%` }}
+              />
+            </div>
+            <span className="release-health-caption">
+              {openAll.length} abiertos ·{' '}
+              {auditList.length - openAll.length} resueltos
+            </span>
+          </div>
+
+          <div className="release-rules-box">
+            <strong className="release-rules-title">
+              Automated release gate rules:
+            </strong>
+            <ul className="release-rules-list">
+              <li className={ruleNoSev5 ? 'rule-pass' : 'rule-fail'}>
+                <span>{ruleNoSev5 ? '✓' : '✕'}</span>
+                0 Bugs Sev-5 bloqueantes abiertos{' '}
+                {!ruleNoSev5 && (
+                  <em>
+                    (Falla: {sev5Open.map((b) => `#${b.id}`).join(', ')})
+                  </em>
+                )}
+              </li>
+              <li className={ruleMaxOneSev4 ? 'rule-pass' : 'rule-fail'}>
+                <span>{ruleMaxOneSev4 ? '✓' : '✕'}</span>
+                Máximo 1 Bug Sev-4 crítico abierto{' '}
+                {!ruleMaxOneSev4 && (
+                  <em>
+                    ({sev4Open.length} abiertos:{' '}
+                    {sev4Open.map((b) => `#${b.id}`).join(', ')})
+                  </em>
+                )}
+              </li>
+              <li className={ruleHealthMin70 ? 'rule-pass' : 'rule-fail'}>
+                <span>{ruleHealthMin70 ? '✓' : '✕'}</span>
+                Índice QA Health mínimo del 70% ({qaHealth}%)
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="release-gate-footer">
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleExportCsv}
+          >
+            Exportar Auditoría QA (.CSV)
+          </button>
+        </div>
+      </section>
 
       <form onSubmit={handleSearch} className="filter-bar">
         <input

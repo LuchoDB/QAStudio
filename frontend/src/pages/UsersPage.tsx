@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { getBugs } from '../api/bugs'
 import {
   deleteUser,
   getSeniorTesters,
@@ -30,6 +31,9 @@ export function UsersPage() {
     return getUsers(offset, PAGE_SIZE)
   }, [search, onlySeniors, offset])
 
+  // Bugs globales para calcular el impacto por Tester (OPCIÓN 4: QA Team Impact & Bug Hunters)
+  const { data: allBugs } = useFetch(() => getBugs(0, 100), [])
+
   function handleSearch(event: SubmitEvent) {
     event.preventDefault()
     setOffset(0)
@@ -55,16 +59,97 @@ export function UsersPage() {
         )
     : null
 
+  function getUserImpact(userId: number) {
+    const userBugs = (allBugs ?? []).filter((b) => b.reporter_id === userId)
+    const totalReported = userBugs.length
+    const criticalDetected = userBugs.filter((b) => b.severity >= 4).length
+    const resolvedByTeam = userBugs.filter((b) => b.is_resolved).length
+    const resolutionRate =
+      totalReported === 0
+        ? 100
+        : Math.round((resolvedByTeam / totalReported) * 100)
+
+    return {
+      totalReported,
+      criticalDetected,
+      resolutionRate,
+    }
+  }
+
   return (
     <div className="page-card">
       <div className="page-header">
-        <h1>Equipo QA (Usuarios)</h1>
+        <div>
+          <span className="section-eyebrow">QA ENGINEERS · LEADERBOARD</span>
+          <h1>QA Team Impact &amp; Bug Hunters</h1>
+        </div>
         {can('write_users') && (
           <Link to="/users/new" className="btn-primary">
             + Nuevo usuario
           </Link>
         )}
       </div>
+
+      {/* OPCIÓN 4: Tarjetas de Impacto del Equipo QA (QA Team Impact & Bug Hunters) */}
+      {displayedUsers && displayedUsers.length > 0 && !error && (
+        <section className="team-impact-grid">
+          {displayedUsers.map((member) => {
+            const impact = getUserImpact(member.id)
+            const initials = member.name
+              .split(' ')
+              .map((p) => p[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()
+            const roleList =
+              member.roles && member.roles.length > 0
+                ? member.roles.map((r) => r.name)
+                : ['QA ENGINEER']
+
+            return (
+              <div key={member.id} className="hunter-card">
+                <div className="hunter-card-header">
+                  <div className="hunter-avatar">{initials}</div>
+                  <div className="hunter-identity">
+                    <Link to={`/users/${member.id}`} className="hunter-name">
+                      {member.name}
+                    </Link>
+                    <div className="hunter-roles-row">
+                      {roleList.map((roleName) => (
+                        <span
+                          key={roleName}
+                          className={
+                            roleName === 'ADMIN'
+                              ? 'hunter-role-admin'
+                              : 'hunter-role-pill'
+                          }
+                        >
+                          {roleName}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hunter-stats-row">
+                  <div className="hunter-stat-col">
+                    <strong>{impact.totalReported}</strong>
+                    <span>Bugs Reportados</span>
+                  </div>
+                  <div className="hunter-stat-col">
+                    <strong>{impact.criticalDetected}</strong>
+                    <span>Críticos Detectados</span>
+                  </div>
+                  <div className="hunter-stat-col">
+                    <strong>{impact.resolutionRate}%</strong>
+                    <span>Tasa Resolución</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </section>
+      )}
 
       <form onSubmit={handleSearch} className="filter-bar">
         <input
