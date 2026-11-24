@@ -57,9 +57,31 @@ export interface NamedPayload { // body de roles y de permisos
   description: string | null
 }
 
-export interface BugSummary { // GET /bug: lista liviana con reporter_id para métricas del equipo
+export const BASE_PROJECTS = ['E-Commerce Web', 'Mobile App', 'Core API']
+
+export function getStoredProjects(): string[] {
+  try {
+    const raw = localStorage.getItem('qastudio_projects')
+    const custom = raw ? (JSON.parse(raw) as string[]) : []
+    return [...new Set([...BASE_PROJECTS, ...custom])]
+  } catch {
+    return BASE_PROJECTS
+  }
+}
+
+export function addStoredProject(name: string): string[] {
+  const current = getStoredProjects()
+  const trimmed = name.trim()
+  if (!trimmed || current.includes(trimmed)) return current
+  const updated = [...current, trimmed]
+  localStorage.setItem('qastudio_projects', JSON.stringify(updated))
+  return updated
+}
+
+export interface BugSummary { // GET /bug: lista liviana con proyecto y reporter_id
   id: number
   title: string
+  project?: string
   module: string
   severity: number
   is_resolved: boolean
@@ -75,6 +97,7 @@ export interface BugDetail extends BugSummary { // GET /bug/{id}: detalle con re
 export interface BugPayload { // body de POST /bug y PATCH /bug/{id}
   title: string
   description: string
+  project: string
   module: string
   severity: number
   is_resolved: boolean

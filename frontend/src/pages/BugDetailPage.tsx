@@ -32,6 +32,10 @@ export function BugDetailPage() {
 
       <div className="detail-grid">
         <p>
+          <strong>Proyecto:</strong>{' '}
+          <span className="tag-badge">{bug.project ?? 'E-Commerce Web'}</span>
+        </p>
+        <p>
           <strong>Módulo afectado:</strong>{' '}
           <span className="tag-badge">{bug.module}</span>
         </p>

@@ -1396,3 +1396,121 @@ th {
 .spark-bar-light {
   background: #c4b5fd;
 }
+
+/* ============================================================
+   PESTAÑAS DE PROYECTOS (Multi-Project Tabs) — QINTIQA Style
+   ============================================================ */
+.project-tabs-wrapper {
+  margin-bottom: 1.35rem;
+}
+
+.project-tabs-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.45rem;
+  background: rgba(241, 245, 249, 0.85);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+}
+
+.project-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.48rem 0.95rem;
+  border-radius: 12px;
+  background: transparent;
+  color: #475569;
+  font-size: 0.87rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+}
+
+.project-tab:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #130f32;
+}
+
+.project-tab-active {
+  background: #130f32 !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(19, 15, 50, 0.22);
+}
+
+.project-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-go {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.65);
+}
+
+.dot-nogo {
+  background: #f43f5e;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.7);
+}
+
+.project-tab-count {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(19, 15, 50, 0.08);
+  color: inherit;
+}
+
+.project-tab-active .project-tab-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.project-tab-add {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.46rem 0.9rem;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #5b21b6;
+  border: 1px dashed #c084fc;
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.project-tab-add:hover {
+  background: #faf5ff;
+  border-color: #9333ea;
+}
+
+.project-add-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.project-add-inline input {
+  padding: 0.4rem 0.7rem !important;
+  font-size: 0.85rem !important;
+  width: 175px;
+}
+
+.project-add-inline button {
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.82rem !important;
+}
+
+.project-pill {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 0.2rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.77rem;
+  font-weight: 700;
+}

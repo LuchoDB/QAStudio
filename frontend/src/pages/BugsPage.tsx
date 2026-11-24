@@ -2,15 +2,32 @@ import { useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteBug, getBugs, getCriticalBugs, searchBugs } from '../api/bugs'
+import {
+  addStoredProject,
+  getStoredProjects,
+  type BugSummary,
+} from '../api/types'
 import { ConfirmButton } from '../components/ConfirmButton'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { useAuth } from '../context/useAuth'
 import { useFetch } from '../hooks/useFetch'
 
 const PAGE_SIZE = 5
+const ALL_PROJECTS = 'ALL'
+
+function getBugProject(bug: BugSummary): string {
+  return bug.project && bug.project.trim() ? bug.project : 'E-Commerce Web'
+}
 
 export function BugsPage() {
   const { can } = useAuth()
+  const [selectedProject, setSelectedProject] = useState<string>(ALL_PROJECTS)
+  const [customProjects, setCustomProjects] = useState<string[]>(() =>
+    getStoredProjects(),
+  )
+  const [addingProject, setAddingProject] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+
   const [offset, setOffset] = useState(0)
   const [searchText, setSearchText] = useState('') // lo que se escribe
   const [search, setSearch] = useState('') // lo que se busca
@@ -18,14 +35,14 @@ export function BugsPage() {
   const [sortAsc, setSortAsc] = useState<boolean | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  // Un solo pedido que depende de los filtros: si cambia uno, se pide de nuevo.
+  // Pedido según filtros de búsqueda o críticos
   const { data: bugs, error, loading, reload } = useFetch(() => {
     if (search) return searchBugs(search)
     if (onlyCritical) return getCriticalBugs()
-    return getBugs(offset, PAGE_SIZE)
-  }, [search, onlyCritical, offset])
+    return getBugs(0, 100)
+  }, [search, onlyCritical])
 
-  // Todos los bugs del sistema para evaluar el Release Readiness Gate global
+  // Todos los bugs del sistema para evaluar pestañas de proyectos y Release Gate
   const { data: allBugs, reload: reloadAllBugs } = useFetch(
     () => getBugs(0, 100),
     [],
@@ -35,6 +52,18 @@ export function BugsPage() {
     event.preventDefault()
     setOffset(0)
     setSearch(searchText.trim())
+  }
+
+  function handleAddProject(event: SubmitEvent) {
+    event.preventDefault()
+    const trimmed = newProjectName.trim()
+    if (!trimmed) return
+    const updated = addStoredProject(trimmed)
+    setCustomProjects(updated)
+    setSelectedProject(trimmed)
+    setOffset(0)
+    setNewProjectName('')
+    setAddingProject(false)
   }
 
   async function handleDelete(id: number) {
@@ -48,26 +77,50 @@ export function BugsPage() {
     }
   }
 
-  // Ordenamiento local sobre una copia al renderizar (sin fetch extra)
-  const displayedBugs = bugs
-    ? sortAsc === null
+  // Lista dinámica de proyectos (los base + los guardados + cualquier proyecto presente en la BD)
+  const bugProjectNames = (allBugs ?? []).map(getBugProject)
+  const projectList = [...new Set([...customProjects, ...bugProjectNames])]
+
+  // Filtrar los bugs de la tabla por el proyecto activo
+  const projectFilteredBugs = bugs
+    ? selectedProject === ALL_PROJECTS
       ? bugs
-      : [...bugs].sort((a, b) =>
+      : bugs.filter((b) => getBugProject(b) === selectedProject)
+    : null
+
+  // Ordenamiento local sobre una copia al renderizar
+  const sortedBugs = projectFilteredBugs
+    ? sortAsc === null
+      ? projectFilteredBugs
+      : [...projectFilteredBugs].sort((a, b) =>
           sortAsc
             ? a.title.localeCompare(b.title)
             : b.title.localeCompare(a.title),
         )
     : null
 
-  const auditList = allBugs ?? displayedBugs ?? []
+  // Paginación local por proyecto
+  const displayedBugs =
+    sortedBugs && !search && !onlyCritical
+      ? sortedBugs.slice(offset, offset + PAGE_SIZE)
+      : sortedBugs
+
+  // Bugs que audita el Release Readiness Gate (específicos del proyecto seleccionado o globales)
+  const rawAuditList = allBugs ?? bugs ?? []
+  const auditList =
+    selectedProject === ALL_PROJECTS
+      ? rawAuditList
+      : rawAuditList.filter((b) => getBugProject(b) === selectedProject)
+
   const sev5Open = auditList.filter((b) => !b.is_resolved && b.severity === 5)
   const sev4Open = auditList.filter((b) => !b.is_resolved && b.severity === 4)
   const criticalBlockers = [...sev5Open, ...sev4Open]
   const openAll = auditList.filter((b) => !b.is_resolved)
 
-  // Cálculo del QA Health Score (0 a 100%) ponderado por severidad de bugs abiertos
+  // Cálculo del QA Health Score (0 a 100%) ponderado por severidad de bugs abiertos en este proyecto
   const penalty = openAll.reduce(
-    (acc, b) => acc + (b.severity === 5 ? 18 : b.severity === 4 ? 10 : b.severity * 2),
+    (acc, b) =>
+      acc + (b.severity === 5 ? 18 : b.severity === 4 ? 10 : b.severity * 2),
     0,
   )
   const qaHealth =
@@ -78,9 +131,26 @@ export function BugsPage() {
   const ruleHealthMin70 = qaHealth >= 70
   const isReleaseGo = ruleNoSev5 && ruleMaxOneSev4 && ruleHealthMin70
 
+  // Evalúa si un proyecto puntual está en GO o NO-GO para mostrar el indicador en su pestaña
+  function isProjectGo(projName: string): boolean {
+    const pBugs = rawAuditList.filter((b) => getBugProject(b) === projName)
+    const pSev5 = pBugs.filter((b) => !b.is_resolved && b.severity === 5)
+    const pSev4 = pBugs.filter((b) => !b.is_resolved && b.severity === 4)
+    const pOpen = pBugs.filter((b) => !b.is_resolved)
+    const pPenalty = pOpen.reduce(
+      (acc, b) =>
+        acc + (b.severity === 5 ? 18 : b.severity === 4 ? 10 : b.severity * 2),
+      0,
+    )
+    const pHealth =
+      pBugs.length === 0 ? 100 : Math.max(0, Math.min(100, 100 - pPenalty))
+    return pSev5.length === 0 && pSev4.length <= 1 && pHealth >= 70
+  }
+
   function handleExportCsv() {
     const headers = [
       'ID',
+      'Proyecto',
       'Titulo',
       'Modulo',
       'Severidad',
@@ -90,6 +160,7 @@ export function BugsPage() {
     ]
     const rows = auditList.map((b) => [
       b.id,
+      `"${getBugProject(b).replace(/"/g, '""')}"`,
       `"${b.title.replace(/"/g, '""')}"`,
       `"${b.module.replace(/"/g, '""')}"`,
       b.severity,
@@ -103,31 +174,131 @@ export function BugsPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `auditoria_release_qastudio.csv`
+    const slug =
+      selectedProject === ALL_PROJECTS
+        ? 'global'
+        : selectedProject.toLowerCase().replace(/[^a-z0-9]+/g, '_')
+    link.download = `auditoria_qa_${slug}.csv`
     link.click()
     URL.revokeObjectURL(url)
   }
+
+  const newBugUrl =
+    selectedProject === ALL_PROJECTS
+      ? '/bugs/new'
+      : `/bugs/new?project=${encodeURIComponent(selectedProject)}`
 
   return (
     <div className="page-card">
       <div className="page-header">
         <div>
-          <span className="section-eyebrow">ISSUE TRACKER · RELEASE GATE</span>
+          <span className="section-eyebrow">
+            MULTI-PROJECT ISSUE TRACKER · RELEASE GATE
+          </span>
           <h1>Incidencias (Bugs)</h1>
         </div>
         {can('write_bugs') && (
-          <Link to="/bugs/new" className="btn-primary">
+          <Link to={newBugUrl} className="btn-primary">
             + Reportar nuevo bug
           </Link>
         )}
       </div>
 
-      {/* OPCIÓN 3: Release Readiness Gate (Go / No-Go) */}
+      {/* Pestañas de Proyectos para auditorías específicas */}
+      <div className="project-tabs-wrapper">
+        <div className="project-tabs-bar" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={selectedProject === ALL_PROJECTS}
+            className={`project-tab ${
+              selectedProject === ALL_PROJECTS ? 'project-tab-active' : ''
+            }`}
+            onClick={() => {
+              setSelectedProject(ALL_PROJECTS)
+              setOffset(0)
+            }}
+          >
+            <span>Todos los proyectos</span>
+            <span className="project-tab-count">{rawAuditList.length}</span>
+          </button>
+
+          {projectList.map((proj) => {
+            const count = rawAuditList.filter(
+              (b) => getBugProject(b) === proj,
+            ).length
+            const projGo = isProjectGo(proj)
+            return (
+              <button
+                key={proj}
+                type="button"
+                role="tab"
+                aria-selected={selectedProject === proj}
+                className={`project-tab ${
+                  selectedProject === proj ? 'project-tab-active' : ''
+                }`}
+                onClick={() => {
+                  setSelectedProject(proj)
+                  setOffset(0)
+                }}
+              >
+                <span
+                  className={`project-status-dot ${
+                    projGo ? 'dot-go' : 'dot-nogo'
+                  }`}
+                  title={projGo ? 'Release GO' : 'Release NO-GO'}
+                />
+                <span>{proj}</span>
+                <span className="project-tab-count">{count}</span>
+              </button>
+            )
+          })}
+
+          {!addingProject ? (
+            <button
+              type="button"
+              className="project-tab-add"
+              onClick={() => setAddingProject(true)}
+            >
+              + Nuevo proyecto
+            </button>
+          ) : (
+            <form onSubmit={handleAddProject} className="project-add-inline">
+              <input
+                placeholder="Nombre del proyecto…"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                autoFocus
+              />
+              <button type="submit" className="btn-primary">
+                Crear
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setAddingProject(false)
+                  setNewProjectName('')
+                }}
+              >
+                ✕
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+
+      {/* OPCIÓN 3: Release Readiness Gate (Go / No-Go) por Proyecto */}
       <section className="release-gate-card">
         <div className="release-gate-top">
-          <h2>Release Readiness Gate (Go / No-Go)</h2>
+          <h2>
+            Release Readiness Gate —{' '}
+            {selectedProject === ALL_PROJECTS
+              ? 'Global (Todos los proyectos)'
+              : selectedProject}
+          </h2>
           <span className="tag-badge">
-            {auditList.length} incidencias auditadas
+            {auditList.length} incidencias en auditoría
           </span>
         </div>
 
@@ -140,8 +311,11 @@ export function BugsPage() {
           <div>
             {isReleaseGo ? (
               <>
-                <strong>LISTO PARA PRODUCCIÓN (GO)</strong> · Todos los
-                controles de calidad fueron superados para el despliegue
+                <strong>LISTO PARA PRODUCCIÓN (GO)</strong> ·{' '}
+                {selectedProject === ALL_PROJECTS
+                  ? 'Todos los proyectos superaron'
+                  : `El proyecto "${selectedProject}" superó`}{' '}
+                los controles de calidad para despliegue
               </>
             ) : (
               <>
@@ -150,7 +324,10 @@ export function BugsPage() {
                 {criticalBlockers.length === 1
                   ? 'Bug Crítico Impide'
                   : 'Bugs Críticos Impiden'}{' '}
-                Despliegue a Producción
+                el Despliegue de{' '}
+                {selectedProject === ALL_PROJECTS
+                  ? 'la Plataforma'
+                  : `"${selectedProject}"`}
               </>
             )}
           </div>
@@ -176,7 +353,8 @@ export function BugsPage() {
 
           <div className="release-rules-box">
             <strong className="release-rules-title">
-              Automated release gate rules:
+              Automated release gate rules (
+              {selectedProject === ALL_PROJECTS ? 'Global' : selectedProject}):
             </strong>
             <ul className="release-rules-list">
               <li className={ruleNoSev5 ? 'rule-pass' : 'rule-fail'}>
@@ -212,7 +390,11 @@ export function BugsPage() {
             className="btn-primary"
             onClick={handleExportCsv}
           >
-            Exportar Auditoría QA (.CSV)
+            Exportar Auditoría{' '}
+            {selectedProject === ALL_PROJECTS
+              ? 'Global'
+              : `de ${selectedProject}`}{' '}
+            (.CSV)
           </button>
         </div>
       </section>
@@ -272,6 +454,7 @@ export function BugsPage() {
                   {sortAsc === null ? '↕' : sortAsc ? 'A-Z' : 'Z-A'}
                 </button>
               </th>
+              <th>Proyecto</th>
               <th>Módulo</th>
               <th>Severidad</th>
               <th>Estado</th>
@@ -283,6 +466,9 @@ export function BugsPage() {
               <tr key={bug.id}>
                 <td>#{bug.id}</td>
                 <td>{bug.title}</td>
+                <td>
+                  <span className="project-pill">{getBugProject(bug)}</span>
+                </td>
                 <td>
                   <span className="tag-badge">{bug.module}</span>
                 </td>
@@ -316,14 +502,20 @@ export function BugsPage() {
             ))}
             {displayedBugs.length === 0 && (
               <tr>
-                <td colSpan={6}>No se encontraron reportes de bugs.</td>
+                <td colSpan={7}>
+                  No se encontraron reportes de bugs en{' '}
+                  {selectedProject === ALL_PROJECTS
+                    ? 'el sistema'
+                    : `el proyecto "${selectedProject}"`}
+                  .
+                </td>
               </tr>
             )}
           </tbody>
         </table>
       )}
 
-      {!search && !onlyCritical && bugs && (
+      {!search && !onlyCritical && sortedBugs && (
         <div className="pagination-bar">
           <button
             type="button"
@@ -337,7 +529,7 @@ export function BugsPage() {
           <button
             type="button"
             className="btn-secondary"
-            disabled={bugs.length < PAGE_SIZE}
+            disabled={offset + PAGE_SIZE >= sortedBugs.length}
             onClick={() => setOffset(offset + PAGE_SIZE)}
           >
             Siguiente

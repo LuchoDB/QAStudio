@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import type { SubmitEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { createBug, getBug, updateBug } from '../api/bugs'
-import type { BugDetail } from '../api/types'
+import {
+  addStoredProject,
+  getStoredProjects,
+  type BugDetail,
+} from '../api/types'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { useFetch } from '../hooks/useFetch'
 
@@ -22,6 +26,14 @@ function EditBug({ id }: { id: number }) {
 
 function BugForm({ bug }: { bug?: BugDetail }) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const initialProject =
+    bug?.project ?? searchParams.get('project') ?? 'E-Commerce Web'
+
+  const [projects] = useState<string[]>(() =>
+    addStoredProject(initialProject),
+  )
+  const [project, setProject] = useState(initialProject)
   const [title, setTitle] = useState(bug?.title ?? '')
   const [module, setModule] = useState(bug?.module ?? '')
   const [severity, setSeverity] = useState(bug ? String(bug.severity) : '3')
@@ -29,11 +41,15 @@ function BugForm({ bug }: { bug?: BugDetail }) {
   const [isResolved, setIsResolved] = useState(bug?.is_resolved ?? false)
   const [error, setError] = useState<string | null>(null)
 
+  const projectOptions = [...new Set([...getStoredProjects(), ...projects, project])]
+
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault()
     setError(null)
+    addStoredProject(project)
     const payload = {
       title,
+      project,
       module,
       severity: Number(severity),
       description,
@@ -56,6 +72,19 @@ function BugForm({ bug }: { bug?: BugDetail }) {
     <div className="page-card">
       <h1>{bug ? `Editar Bug #${bug.id}` : 'Reportar nuevo bug'}</h1>
       <form onSubmit={handleSubmit} className="form-stack">
+        <label>
+          Proyecto auditado
+          <select
+            value={project}
+            onChange={(e) => setProject(e.target.value)}
+          >
+            {projectOptions.map((proj) => (
+              <option key={proj} value={proj}>
+                {proj}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           Título de la incidencia
           <input
