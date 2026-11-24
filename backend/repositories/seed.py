@@ -16,7 +16,7 @@ PERMISSION_NAMES = [
 ROLE_PERMISSIONS = {
     ADMIN_ROLE: PERMISSION_NAMES,
     TESTER_ROLE: ["read_users", "read_bugs", "write_bugs", "update_bugs"],
-    REGULAR_ROLE: ["read_users", "read_bugs", "write_bugs", "update_bugs"],
+    REGULAR_ROLE: ["read_users", "read_bugs"],
 }
 
 DEFAULT_COUNTRIES = [

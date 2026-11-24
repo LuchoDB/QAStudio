@@ -24,6 +24,8 @@ class CountryResponse(CountryBase):
 class GetUsersResponse(SQLModel):
     id: int
     name: str
+    age: int | None = None
+    roles: list[RoleResponse] = []
 
 
 class DeleteUserResponse(SQLModel):

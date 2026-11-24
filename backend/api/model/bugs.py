@@ -22,6 +22,7 @@ class GetBugsResponse(SQLModel):
     module: str
     severity: int
     is_resolved: bool
+    reporter_id: int | None = None
 
 
 class GetBugDetailResponse(GetBugsResponse):
